@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="eng-us">
+<head>
+  <meta charset="utf-8">
+  <title>htmlPiano</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    * {
+      box-sizing:border-box;
+    }
+
+    body {
+      padding: 1vw;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #params-container {
+      display: flex;
+      margin-top: 1vh;
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    button {
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition-duration: 0.2s;
+    }
+
+    button:hover {
+      box-shadow: 0 0.2vw 0.2vw 0 rgba(0,0,0,0.24), 0 0.4vw 0.4vw 0 rgba(0,0,0,0.19);
+    }
+
+    #overlay {
+      position: fixed;
+      display: block;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 3;
+      cursor: pointer;
+    }
+
+    #container {
+      display:flex;
+      position:relative;
+      float:left;
+    }
+
+    .no-select {
+      -webkit-user-select: none; /* Safari */
+      -moz-user-select: none; /* Firefox */
+      -ms-user-select: none; /* IE10+/Edge */
+      user-select: none; /* Standard */
+    }
+
+    .key {
+      position: relative;
+      justify-content: center;
+      text-align: center;
+      font-family: Verdana,sans-serif;
+      margin: 0.1vw;
+    }
+
+    .key.white {
+      z-index:1;
+      background: #ffffff;
+      color: #111111;
+      width: 6.2vw;
+      height: 31.4vw;
+      border:1px solid #111111;
+    }
+
+    .key.white div {
+      position: absolute;
+      bottom: 0;
+    }
+
+    .key.black {
+      z-index:2;
+      background: #111111;
+      color: #ffffff;
+      width: 3.1vw;
+      height: 15.7vw;
+      border:1px solid #888888;
+      margin-left: -1.65vw;
+      margin-right: 1.65vw;
+    }
+
+    .key.black + .key.white {
+      margin-left: -3vw;
+    }
+
+    .key.F + .key.black {
+      margin-left: -0.775vw;
+      margin-right: 0.775vw;
+    }
+
+    .key.A + .key.black {
+      margin-left: -2.325vw;
+      margin-right: 2.325vw;
+    }
+
+
+
+
+  </style>
+</head>
+
+<body>
+<div id="overlay"></div>
+<div id="container"></div>
+<div id="params-container">
+  <label for="volume-slider">Volume:</label>
+  <input type="range" min="0" max="100" value="0" class="slider" id="volume-slider">
+  <label for="midi-min">First note (MIDI):</label>
+  <input type="number" id="midi-min" min="1" max="108" step="1" value="60">
+  <label for="midi-count">Number of notes:</label>
+  <input type="number" id="midi-count" min="1" max="108" step="1" value="12">
+</div>
+</body>
+
+<script>
+  let audioCtx = null;
+  let volume = 0; //
+  let tuningFrequency = 440.0;
+  let start = 60;
+  let count = 12;
+
+  const MIDI_NOTES = ['A', 'A♯/B♭', 'B',  'C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭'];
+
+  function loadPiano() {
+    console.log("hello");
+    const container = document.querySelector("#container");
+    container.innerHTML = '';
+    for(let midi_note = start; midi_note <= (start + count); ++midi_note) {
+      const note_index = (midi_note+3)%(MIDI_NOTES.length);
+      const note_label = MIDI_NOTES[note_index];
+
+      const b = document.createElement("button");
+      const color = note_label.length === 1 ? "white" : "black";
+      b.classList.add("key", "no-select", color);
+      if (color === "white") {
+        const label = document.createElement("div");
+        label.classList.add("no-select");
+        label.textContent = note_label;
+        b.classList.add(note_label)
+        b.append(label);
+      }
+
+      b.setAttribute("midi", midi_note.toString());
+      b.addEventListener("click", function() {
+        const midi_note = this.getAttribute("midi");
+        const freq = tuningFrequency * Math.pow(2.0, (midi_note-69.0)/12.0);
+        console.log(this.textContent, freq);
+        beep(freq, 500, volume);
+      });
+      container.appendChild(b);
+    }
+  }
+
+  window.addEventListener("load", function() {
+    document.querySelector("#overlay").addEventListener("click", function() {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext || window.audioContext);
+      console.log("click");
+      this.style.display = "none";
+      beep(440, 1, 0); // muted sound
+    });
+
+    document.querySelector("#volume-slider").setAttribute("value", volume.toString());
+    document.querySelector("#volume-slider").addEventListener("change", function(event) {
+      volume = event.target.value / 100.0;
+    });
+
+    document.querySelector("#midi-count").addEventListener("change", function(event){
+      count = Number(event.target.value);
+      if (start + count > 108) {
+        count = 108 - start;
+        this.value = count;
+      }
+      loadPiano();
+    });
+
+    document.querySelector("#midi-min").addEventListener("change", function(event){
+      start = Number(event.target.value);
+      if (start + count > 108) {
+        start = 108 - count;
+        this.value = start;
+      }
+      loadPiano();
+    });
+
+    loadPiano();
+  });
+
+  async function beep(frequency, duration, volume, type = "sine", callback = () => {}) {
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    oscillator.frequency.value = frequency;
+    oscillator.type = type;
+    oscillator.onended = callback;
+
+    gainNode.gain.value = 0;
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.01);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration / 1000);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + ((duration || 500) / 1000));
+  }
+
+</script>
+
+</html>
