@@ -144,7 +144,7 @@
     console.log("hello");
     const container = document.querySelector("#container");
     container.innerHTML = '';
-    for(let midi_note = start; midi_note <= (start + count); ++midi_note) {
+    for(let midi_note = start; midi_note < (start + count); ++midi_note) {
       const note_index = (midi_note+3)%(MIDI_NOTES.length);
       const note_label = MIDI_NOTES[note_index];
 
