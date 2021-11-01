@@ -109,23 +109,22 @@
       margin-right: 2.325vw;
     }
 
-
-
-
   </style>
 </head>
 
 <body>
-<div id="overlay"></div>
-<div id="container"></div>
-<div id="params-container">
-  <label for="volume-slider">Volume:</label>
-  <input type="range" min="0" max="100" value="0" class="slider" id="volume-slider">
-  <label for="midi-min">First note (MIDI):</label>
-  <input type="number" id="midi-min" min="1" max="108" step="1" value="60">
-  <label for="midi-count">Number of notes:</label>
-  <input type="number" id="midi-count" min="1" max="108" step="1" value="12">
-</div>
+  <div id="overlay"></div>
+
+  <div id="container"></div>
+
+  <div id="params-container">
+    <label for="volume-slider">Volume:</label>
+    <input type="range" min="0" max="100" value="0" class="slider" id="volume-slider">
+    <label for="midi-min">First note (MIDI):</label>
+    <input type="number" id="midi-min" min="1" max="108" step="1" value="60">
+    <label for="midi-count">Number of notes:</label>
+    <input type="number" id="midi-count" min="1" max="108" step="1" value="12">
+  </div>
 </body>
 
 <script>
@@ -136,6 +135,10 @@
   let count = 12;
 
   const MIDI_NOTES = ['A', 'A♯/B♭', 'B',  'C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭'];
+
+  function clamp(value, minimum, maximum) {
+    return Math.min(Math.max(value, minimum), maximum);
+  }
 
   function loadPiano() {
     console.log("hello");
@@ -181,20 +184,14 @@
     });
 
     document.querySelector("#midi-count").addEventListener("change", function(event){
-      count = Number(event.target.value);
-      if (start + count > 108) {
-        count = 108 - start;
-        this.value = count;
-      }
+      count = clamp(Number(event.target.value), this.min, this.max);
+      this.value = count;
       loadPiano();
     });
 
     document.querySelector("#midi-min").addEventListener("change", function(event){
-      start = Number(event.target.value);
-      if (start + count > 108) {
-        start = 108 - count;
-        this.value = start;
-      }
+      count = clamp(Number(event.target.value), this.min, this.max);
+      this.value = count;
       loadPiano();
     });
 
