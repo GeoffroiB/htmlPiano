@@ -142,9 +142,9 @@
   }
 
   function loadPiano() {
-    console.log("hello");
     const container = document.querySelector("#container");
     container.innerHTML = '';
+
     for(let midi_note = start; midi_note < (start + count); ++midi_note) {
       const note_index = (midi_note+3)%(MIDI_NOTES.length);
       const note_label = MIDI_NOTES[note_index];
@@ -152,6 +152,7 @@
       const b = document.createElement("button");
       const color = note_label.length === 1 ? "white" : "black";
       b.classList.add("key", "no-select", color);
+
       if (color === "white") {
         const label = document.createElement("div");
         label.classList.add("no-select");
@@ -167,29 +168,34 @@
         console.log(this.textContent, freq);
         beep(freq, 500, volume);
       });
+
       container.appendChild(b);
     }
   }
 
   window.addEventListener("load", function() {
+    // Overlay click event binding
     document.querySelector("#overlay").addEventListener("click", function() {
       audioCtx = new (window.AudioContext || window.webkitAudioContext || window.audioContext);
       console.log("click");
       this.style.display = "none";
-      beep(440, 1, 0); // muted sound
+      beep(440, 1, 0); // muted init sound
     });
 
+    // Volume Slider initialization
     document.querySelector("#volume-slider").setAttribute("value", volume.toString());
     document.querySelector("#volume-slider").addEventListener("change", function(event) {
       volume = event.target.value / 100.0;
     });
 
+    // Note count input event binding
     document.querySelector("#midi-count").addEventListener("change", function(event){
       count = clamp(Number(event.target.value), this.min, this.max);
       this.value = count;
       loadPiano();
     });
 
+    // Lowest note input event binding
     document.querySelector("#midi-min").addEventListener("change", function(event){
       count = clamp(Number(event.target.value), this.min, this.max);
       this.value = count;
@@ -200,6 +206,7 @@
   });
 
   async function beep(frequency, duration, volume, type = "sine", callback = () => {}) {
+    // Play sound
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
 
