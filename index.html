@@ -135,7 +135,7 @@
     volume: 0,
     tuningFrequency: 440,
     actuationTime: 1,
-    sustainTime: 500,
+    sustainTime: 100,
     fadeLength: 500
   };
 
@@ -173,7 +173,7 @@
         const midi_note = this.getAttribute("midi");
         const freq = noteParams.tuningFrequency * Math.pow(2.0, (midi_note-69.0)/12.0);
         console.log(this.textContent, freq);
-        beep(freq, noteParams.fadeLength, noteParams.volume);
+        beep(freq);
       });
 
       container.appendChild(b);
@@ -186,7 +186,7 @@
       audioCtx = new (window.AudioContext || window.webkitAudioContext || window.audioContext);
       console.log("click");
       this.style.display = "none";
-      beep(440, 1, 0); // muted init sound
+      beep(440, 0); // muted init sound
     });
 
     // Volume Slider initialization
@@ -210,9 +210,9 @@
     loadPiano();
   });
 
-  async function beep(frequency, duration, volume, type = "sine", callback = () => {}) {
+  async function beep(frequency, volume = noteParams.volume, type = "sine", callback = () => {}) {
     // Play sound
-    const oscillator = audioCtx.createOscillator();
+    const oscillator = audioCtx.createOscillator(); // Initialize only once?
     const gainNode = audioCtx.createGain();
 
     oscillator.connect(gainNode);
@@ -220,15 +220,24 @@
     oscillator.type = type;
     oscillator.onended = callback;
 
-    gainNode.gain.value = 0;
-    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + noteParams.actuationTime / 1000.0);
-    gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + (noteParams.actuationTime + noteParams.sustainTime) / 1000.0);
-    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + (duration) / 1000 );
+    let time = audioCtx.currentTime;
+    gainNode.gain.setValueAtTime(0, time);
+
+    // Actuation
+    time += noteParams.actuationTime / 1000.0;
+    gainNode.gain.linearRampToValueAtTime(volume, time);
+
+    // Sustain
+    time += noteParams.sustainTime / 1000.0;
+    gainNode.gain.linearRampToValueAtTime(volume, time);
+
+    // Fade out
+    time += noteParams.fadeLength / 1000.0;
+    gainNode.gain.linearRampToValueAtTime(0, time);
     gainNode.connect(audioCtx.destination);
 
     oscillator.start(audioCtx.currentTime);
-    oscillator.stop(audioCtx.currentTime + ((duration || 500) / 1000));
+    oscillator.stop(time);
   }
 
 </script>
