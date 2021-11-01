@@ -130,10 +130,14 @@
 
 <script>
   let audioCtx = null;
-  let volume = 0; //
-  let tuningFrequency = 440.0;
-  let start = 60;
-  let count = 12;
+
+  let noteParams = {
+    volume: 0,
+    tuningFrequency: 440,
+    actuationTime: 1,
+    sustainTime: 500,
+    fadeLength: 500
+  };
 
   const MIDI_NOTES = ['A', 'A♯/B♭', 'B',  'C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭'];
 
@@ -144,6 +148,9 @@
   function loadPiano() {
     const container = document.querySelector("#container");
     container.innerHTML = '';
+
+    const count = Number(document.querySelector("#midi-count").value);
+    const start = Number(document.querySelector("#midi-min").value);
 
     for(let midi_note = start; midi_note < (start + count); ++midi_note) {
       const note_index = (midi_note+3)%(MIDI_NOTES.length);
@@ -164,9 +171,9 @@
       b.setAttribute("midi", midi_note.toString());
       b.addEventListener("click", function() {
         const midi_note = this.getAttribute("midi");
-        const freq = tuningFrequency * Math.pow(2.0, (midi_note-69.0)/12.0);
+        const freq = noteParams.tuningFrequency * Math.pow(2.0, (midi_note-69.0)/12.0);
         console.log(this.textContent, freq);
-        beep(freq, 500, volume);
+        beep(freq, noteParams.fadeLength, noteParams.volume);
       });
 
       container.appendChild(b);
@@ -183,22 +190,20 @@
     });
 
     // Volume Slider initialization
-    document.querySelector("#volume-slider").setAttribute("value", volume.toString());
+    document.querySelector("#volume-slider").setAttribute("value", noteParams.volume.toString());
     document.querySelector("#volume-slider").addEventListener("change", function(event) {
-      volume = event.target.value / 100.0;
+      noteParams.volume = event.target.value / 100.0;
     });
 
     // Note count input event binding
     document.querySelector("#midi-count").addEventListener("change", function(event){
-      count = clamp(Number(event.target.value), this.min, this.max);
-      this.value = count;
+      this.value = clamp(Number(event.target.value), this.min, this.max);
       loadPiano();
     });
 
     // Lowest note input event binding
     document.querySelector("#midi-min").addEventListener("change", function(event){
-      count = clamp(Number(event.target.value), this.min, this.max);
-      this.value = count;
+      this.value = clamp(Number(event.target.value), this.min, this.max);
       loadPiano();
     });
 
@@ -217,8 +222,9 @@
 
     gainNode.gain.value = 0;
     gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.01);
-    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration / 1000);
+    gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + noteParams.actuationTime / 1000.0);
+    gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + (noteParams.actuationTime + noteParams.sustainTime) / 1000.0);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + (duration) / 1000 );
     gainNode.connect(audioCtx.destination);
 
     oscillator.start(audioCtx.currentTime);
