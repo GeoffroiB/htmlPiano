@@ -38,6 +38,10 @@
       box-shadow: 0 0.2vw 0.2vw 0 rgba(0,0,0,0.24), 0 0.4vw 0.4vw 0 rgba(0,0,0,0.19);
     }
 
+    button:active {
+      color: green;
+    }
+
     #overlay {
       display: block;
       width: 100%;
@@ -169,7 +173,7 @@
       }
 
       b.setAttribute("midi", midi_note.toString());
-      b.addEventListener("click", function() {
+      b.addEventListener("mousedown", function() {
         const midi_note = this.getAttribute("midi");
         const freq = noteParams.tuningFrequency * Math.pow(2.0, (midi_note-69.0)/12.0);
         console.log(this.textContent, freq);
